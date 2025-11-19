@@ -60,6 +60,14 @@ def subst {Γ Δ}
   | λ. t     => exact λ. (subst (exts σ) t)
   | t1 ⋅ t2  => exact (subst σ t1) ⋅ (subst σ t2)
 
+inductive Value : {Γ : List Ty} → Γ ⊢ A → Type u where
+  | unit :
+    ----------------
+    Value Typing.unit
+  | lam {Γ} {M : .unit :: Γ ⊢ .unit} :
+    ------------------------
+    Value (λ. M)
+
 inductive Step : {Γ : List Ty} → Γ ⊢ A → Γ ⊢ A → Type u where
   | ξ₁ {Γ} {M N₁ N₂ : Γ ⊢ .unit} :
       Step N₁ N₂
@@ -77,12 +85,29 @@ inductive Step : {Γ : List Ty} → Γ ⊢ A → Γ ⊢ A → Type u where
     ------------------------
     → Step (λ. M) (λ. N)
 
-infix:40 " ⟶ " => @Step List.nil
+infix:40 " ⟶ " => Step
 
-macro "#" n:num : term => `(Typing.var (Ix.fromNat (a := Ty.unit) $n (by simp)))
+inductive Progress (M : Γ ⊢ A) : Prop where
+  | value : Value M → Progress M
+  | step {N : Γ ⊢ A} : (M ⟶ N) → Progress M
 
-example : [] ⊢ .unit :=
-  (λ. #0) ⋅ •
+/- Proofs of Progress and Preservation would go here -/
 
-example : [] ⊢ .unit :=
-  (λ. (λ. #1 ⋅ #0)) ⋅ (λ. •)
+theorem progress (M : ∅ ⊢ A) : Progress M :=
+  match M with
+  | •       => .value Value.unit
+  | ′v      => by contradiction
+  | λ. M'   => .value (Value.lam)
+  | M₁ ⋅ M₂ => by
+    have p1 := progress M₁
+    have p2 := progress M₂
+    cases p1
+    case step
+
+-- macro "#" n:num : term => `(Typing.var (Ix.fromNat (a := Ty.unit) $n (by simp)))
+
+-- example : [] ⊢ .unit :=
+--   (λ. #0) ⋅ •
+
+-- example : [] ⊢ .unit :=
+--   (λ. (λ. #1 ⋅ #0)) ⋅ (λ. •)
