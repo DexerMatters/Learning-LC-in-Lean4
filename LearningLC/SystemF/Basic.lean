@@ -24,16 +24,20 @@ def Ty.rename {Δ Δ'}
 
 def Ty.shift {Δ} : Ty Δ → Ty (Δ + 1) := Ty.rename (fun x => Fin.succ x)
 
-def Ty.subst {Δ} (U : Ty Δ) : Ty (Δ + 1) → Ty Δ
-  | .tyVar x      =>
-    match x with
-      | 0         => U
-      | ⟨k+1, hk⟩ => .tyVar ⟨k, Nat.lt_of_succ_lt_succ hk⟩
+def Ty.exts {Δ Δ'} (σ : Fin Δ → Ty Δ') : Fin (Δ + 1) → Ty (Δ' + 1)
+  | 0 => Ty.tyVar 0
+  | ⟨k+1, hk⟩ => Ty.shift (σ ⟨k, by omega⟩)
+
+def Ty.subst {Δ Δ'} (σ : Fin Δ → Ty Δ') : Ty Δ → Ty Δ'
+  | .tyVar x      => σ x
   | .tyNat        => .tyNat
-  | .tyArr A B    => .tyArr (.subst U A) (.subst U B)
-  | .tyForall A   => .tyForall (.subst (.shift U) A)
+  | .tyArr A B    => .tyArr (Ty.subst σ A) (Ty.subst σ B)
+  | .tyForall A   => .tyForall (Ty.subst (Ty.exts σ) A)
 
-
+def Ty.subst₀ {Δ} (U : Ty Δ) : Ty (Δ + 1) → Ty Δ :=
+  Ty.subst (fun x => match x with
+    | 0         => U
+    | ⟨k+1, hk⟩ => Ty.tyVar ⟨k, by omega⟩)
 
 inductive Term : (Δ : Nat) → List (Ty Δ) → Ty Δ → Type u where
   | var {Δ Γ A} :
@@ -55,7 +59,7 @@ inductive Term : (Δ : Nat) → List (Ty Δ) → Ty Δ → Type u where
   | tapp {Δ Γ A} :
       Term Δ Γ (Ty.tyForall A) → (U : Ty Δ)
     ---------------------------------------
-    → Term Δ Γ (Ty.subst U A)
+    → Term Δ Γ (Ty.subst₀ U A)
   | mu {Δ Γ A} :
       Term Δ (A :: Γ) A
     -------------------
