@@ -6,21 +6,6 @@ inductive Ty : Nat → Type u where
   | tyArr {Δ} : Ty Δ → Ty Δ → Ty Δ
   | tyForall {Δ} : Ty (Δ + 1) → Ty Δ
 
-def Ty.shift {Δ} : Ty Δ → Ty (Δ + 1)
-  | .tyVar x      => .tyVar (Fin.succ x)
-  | .tyNat        => .tyNat
-  | .tyArr A B    => .tyArr (.shift A) (.shift B)
-  | .tyForall A   => .tyForall (.shift A)
-
-def Ty.subst {Δ} (U : Ty Δ) : Ty (Δ + 1) → Ty Δ
-  | .tyVar x      =>
-    match x with
-      | 0         => U
-      | ⟨k+1, hk⟩ => .tyVar ⟨k, Nat.lt_of_succ_lt_succ hk⟩
-  | .tyNat        => .tyNat
-  | .tyArr A B    => .tyArr (.subst U A) (.subst U B)
-  | .tyForall A   => .tyForall (.subst (.shift U) A)
-
 def Ty.ext {Δ Δ'}
   (ρ : Fin Δ → Fin Δ')
   : Fin (Δ + 1) → Fin (Δ' + 1)
@@ -35,10 +20,20 @@ def Ty.rename {Δ Δ'}
   | .tyVar x      => .tyVar (ρ x)
   | .tyNat        => .tyNat
   | .tyArr A B    => .tyArr (Ty.rename ρ A) (Ty.rename ρ B)
-  | .tyForall A   => .tyForall (Ty.rename (fun x => match x with
-      | ⟨0, _⟩    => 0
-      | ⟨k+1, hk⟩ => Fin.succ (ρ ⟨k, by omega⟩)
-    ) A)
+  | .tyForall A   => .tyForall (Ty.rename (Ty.ext ρ) A)
+
+def Ty.shift {Δ} : Ty Δ → Ty (Δ + 1) := Ty.rename (fun x => Fin.succ x)
+
+def Ty.subst {Δ} (U : Ty Δ) : Ty (Δ + 1) → Ty Δ
+  | .tyVar x      =>
+    match x with
+      | 0         => U
+      | ⟨k+1, hk⟩ => .tyVar ⟨k, Nat.lt_of_succ_lt_succ hk⟩
+  | .tyNat        => .tyNat
+  | .tyArr A B    => .tyArr (.subst U A) (.subst U B)
+  | .tyForall A   => .tyForall (.subst (.shift U) A)
+
+
 
 inductive Term : (Δ : Nat) → List (Ty Δ) → Ty Δ → Type u where
   | var {Δ Γ A} :
@@ -56,7 +51,7 @@ inductive Term : (Δ : Nat) → List (Ty Δ) → Ty Δ → Type u where
   | tlam {Δ Γ A} :
       Term (Δ + 1) (Γ.map Ty.shift) A
     --------------------------------
-    → Term (Δ) Γ (Ty.tyForall A)
+    → Term Δ Γ (Ty.tyForall A)
   | tapp {Δ Γ A} :
       Term Δ Γ (Ty.tyForall A) → (U : Ty Δ)
     ---------------------------------------
@@ -72,6 +67,8 @@ inductive Term : (Δ : Nat) → List (Ty Δ) → Ty Δ → Type u where
       ---------------------------------------------------------
       → Term Δ Γ A
 
+
+notation:60 e1:90 ";" e2:90 "⊢" e3:50 => Term e1 e2 e3
 
 notation:60 " λ:" ty:0 "." e:50 => Term.lam ty e
 notation:55 e1:50 " ⋅ " e2:55 => Term.app e1 e2
