@@ -1,4 +1,4 @@
-import LearningLC.DeBruijn
+import LearningLC.STLC.DeBruijn
 import LearningLC.STLC.Basic
 
 open Term

@@ -1,4 +1,4 @@
-import LearningLC.DeBruijn
+import LearningLC.STLC.DeBruijn
 
 universe u
 
