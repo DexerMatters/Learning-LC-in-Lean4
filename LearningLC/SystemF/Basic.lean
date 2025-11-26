@@ -38,10 +38,10 @@ inductive Term : (Δ : Nat) → Context Δ → Ty Δ → Type u where
       Term (Δ + 1) (exts Γ) A
     ---------------------------
     → Term Δ Γ (Ty.tyForall A)
-  | tapp {Δ Γ A A'} :
+  | tapp {Δ Γ A} :
       Term Δ Γ (Ty.tyForall A) → (B : Ty Δ)
     -----------------------------------------
-    → Term Δ Γ A'
+    → Term Δ Γ (Ty.subst₀ B A)
   | mu {Δ Γ A} :
       Term Δ (A :: Γ) A
     -----------------

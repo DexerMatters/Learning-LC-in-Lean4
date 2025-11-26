@@ -28,7 +28,7 @@ def Term.rename {Δ Δ'} {Γ : Context Δ} {Γ' : Context Δ'}
   | .lam t1 => .lam (.rename R (ext R ρ) t1)
   | .app t1 t2 => .app (.rename R ρ t1) (.rename R ρ t2)
   | .tlam t1 => .tlam (.rename (Ty.ext R) (extₜ R ρ) t1)
-  | .tapp t1 B => .tapp (.rename R ρ t1) (B.rename R)
+  | .tapp t1 B =>
   | .mu t1 => .mu (.rename R (ext R ρ) t1)
   | .succ t1 => .succ (.rename R ρ t1)
   | .zero => .zero
@@ -36,22 +36,3 @@ def Term.rename {Δ Δ'} {Γ : Context Δ} {Γ' : Context Δ'}
       .cases (.rename R ρ t1)
              (.rename R ρ t2)
              (.rename R (ext R ρ) t3)
-
-def Term.exts {Δ Δ'} {Γ : Context Δ} {Γ' : Context Δ'}
-  (S : Fin Δ → Ty Δ')
-  (σ : ∀ {A}, Γ ∋ A → Term Δ' Γ' (A.subst S))
-  ------------------------------------------------
-  : ∀ {A B}, (B :: Γ) ∋ A → Term Δ' (B.subst S :: Γ') (A.subst S)
-:= fun {A B} v => match v with
-  | Var.here      => .var .here
-  | Var.there v   => .var (.there (σ v))
-
-def Term.subst {Δ Δ'} {Γ : Context Δ} {Γ' : Context Δ'}
-  (S : Fin Δ → Ty Δ')
-  (σ : ∀ {A}, Γ ∋ A → Term Δ' Γ' (A.subst S))
-  -------------------------------------
-  : ∀ {A}, Δ; Γ ⊢ A → Δ'; Γ' ⊢ A.subst S
-:= fun {A} t => match t with
-  | .var v => σ v
-  | .lam t1 => .lam (Term.subst S (Term.exts S σ) t1)
-  | .app t1 t2 => .app (Term.subst S σ t1) (Term.subst S σ t2)
