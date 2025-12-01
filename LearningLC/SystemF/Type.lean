@@ -4,7 +4,6 @@ inductive Ty : Nat → Type u where
   | tyArr {Δ} : Ty Δ → Ty Δ → Ty Δ
   | tyForall {Δ} : Ty (Δ + 1) → Ty Δ
 
-
 def Ty.ext {Δ Δ'}
   (ρ : Fin Δ → Fin Δ')
   : Fin (Δ + 1) → Fin (Δ' + 1)
